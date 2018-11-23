@@ -19,11 +19,11 @@
 
 import {Request, Response, Router} from "express";
 import {ServerConfig} from "../config";
+import {Client} from "../controller/Client";
+import {TrackingController} from "../controller/TrackingController";
 import * as BrowserUtil from '../util/BrowserUtil';
-import {Client} from "./Client";
-import {TrackingController} from "./TrackingController";
 
-export class VerifyAccountController {
+export class VerifyAccountResource {
 
   public static readonly ROUTE_VERIFY_EMAIL = '/verify';
   public static readonly ROUTE_VERIFY_BOT = '/verify/bot';
@@ -41,9 +41,9 @@ export class VerifyAccountController {
 
   public getRoutes = () => {
     return [
-      Router().get(VerifyAccountController.ROUTE_VERIFY_EMAIL, this.handleEmailGet),
-      Router().get(VerifyAccountController.ROUTE_VERIFY_BOT, this.handleBotGet),
-      Router().get(VerifyAccountController.ROUTE_VERIFY_PHONE, this.handlePhoneGet),
+      Router().get(VerifyAccountResource.ROUTE_VERIFY_EMAIL, this.handleEmailGet),
+      Router().get(VerifyAccountResource.ROUTE_VERIFY_BOT, this.handleBotGet),
+      Router().get(VerifyAccountResource.ROUTE_VERIFY_PHONE, this.handlePhoneGet),
     ];
   };
 
@@ -73,7 +73,7 @@ export class VerifyAccountController {
       payload.status = req.query.success === '' ? 'success' : 'error';
       payload.redirect = '';
     }
-    return res.render(VerifyAccountController.TEMPLATE_VERIFY_EMAIL, payload);
+    return res.render(VerifyAccountResource.TEMPLATE_VERIFY_EMAIL, payload);
   }
 
   private readonly handleBotGet = async (req: Request, res: Response) => {
@@ -103,7 +103,7 @@ export class VerifyAccountController {
       payload.status = req.query.success === '' ? 'success' : 'error';
       payload.redirect = '';
     }
-    return res.render(VerifyAccountController.TEMPLATE_VERIFY_BOT, payload);
+    return res.render(VerifyAccountResource.TEMPLATE_VERIFY_BOT, payload);
   }
 
   private readonly handlePhoneGet = async (req: Request, res: Response) => {
@@ -115,6 +115,6 @@ export class VerifyAccountController {
       title: _('verify.titlePhone'),
       url: `${this.config.URL.REDIRECT_PHONE_BASE}/${req.params.code}`,
     };
-    return res.render(VerifyAccountController.TEMPLATE_VERIFY_PHONE, payload);
+    return res.render(VerifyAccountResource.TEMPLATE_VERIFY_PHONE, payload);
   }
 };

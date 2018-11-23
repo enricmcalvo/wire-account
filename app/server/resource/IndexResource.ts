@@ -19,11 +19,11 @@
 
 import {Request, Response, Router} from "express";
 import {ServerConfig} from "../config";
+import {Client} from "../controller/Client";
+import {TrackingController} from "../controller/TrackingController";
 import * as BrowserUtil from '../util/BrowserUtil';
-import {Client} from "./Client";
-import {TrackingController} from "./TrackingController";
 
-export class RootController {
+export class IndexResource {
 
   public static readonly ROUTE_INDEX = '/';
 
@@ -32,13 +32,13 @@ export class RootController {
 
   private trackingController: TrackingController;
 
-  constructor(private readonly config: ServerConfig, client: Client) {
-    this.trackingController = new TrackingController(config, client);
+  constructor(private readonly config: ServerConfig, private readonly client: Client) {
+    this.trackingController = new TrackingController(this.config, this.client);
   }
 
   public getRoutes = () => {
     return [
-      Router().get(RootController.ROUTE_INDEX, this.handleGet),
+      Router().get(IndexResource.ROUTE_INDEX, this.handleGet),
     ];
   };
 
@@ -75,9 +75,9 @@ export class RootController {
         redirect: payload.redirect,
         title: `Wire · ${_('index.title')}`,
       };
-      return res.render(RootController.TEMPLATE_OPEN_GRAPH, openGraphPayload);
+      return res.render(IndexResource.TEMPLATE_OPEN_GRAPH, openGraphPayload);
     }
 
-    return this.config.ENVIRONMENT === 'development' ? res.render(RootController.TEMPLATE_INDEX, payload) : res.redirect(payload.redirect);
+    return this.config.ENVIRONMENT === 'development' ? res.render(IndexResource.TEMPLATE_INDEX, payload) : res.redirect(payload.redirect);
   }
 };

@@ -20,39 +20,21 @@
 import {AxiosResponse} from 'axios';
 import {Request, Response} from "express";
 import {ServerConfig} from "../config";
-import {Client} from "./Client";
-import {ForgotController} from "./ForgotController";
-import {TrackingController} from "./TrackingController";
+import {AccountController} from "../controller/AccountController";
+import {Client} from "../controller/Client";
+import {ForgotPasswordResource} from "./ForgotPasswordResource";
 
-describe('ForgotController', () => {
-  it('successfully POSTs to /password-reset', async () => {
-    const postForgotSpy = jasmine.createSpy().and.returnValue(Promise.resolve());
-    const config = {
-      BACKEND_REST: 'backend',
-    }
-    const client: any = {
-      post: postForgotSpy,
-    };
-    const controller = new ForgotController(config as ServerConfig, client as Client);
-    const email: string = 'email';
-
-    await controller['postPasswordReset'](email);
-    expect(postForgotSpy.calls.count()).toBe(1);
-    expect(postForgotSpy.calls.mostRecent().args.length).toBe(2);
-    expect(postForgotSpy.calls.mostRecent().args[0]).toBe(`${config.BACKEND_REST}/password-reset`);
-    expect(postForgotSpy.calls.mostRecent().args[1]).toEqual({email});
-  });
-
+describe('ForgotPasswordResource', () => {
   describe('handlePost', () => {
     it('renders the success page if valid email is provided', async () => {
       const renderSpy = jasmine.createSpy();
-      const trackingController: any = {
-        trackEvent: () => {},
+      const accountController: any = {
+        resetPassword: () => Promise.resolve({response: {status: 200}}),
       };
       const config = {};
       const client = {};
-      const controller = new ForgotController(config as ServerConfig, client as Client);
-      controller['trackingController'] = trackingController as TrackingController;
+      const resource = new ForgotPasswordResource(config as ServerConfig, client as Client);
+      resource['accountController'] = accountController as AccountController;
 
       const req: any = {
         fields: {
@@ -64,23 +46,23 @@ describe('ForgotController', () => {
         render: renderSpy,
       };
 
-      controller['postPasswordReset'] = (): Promise<AxiosResponse> => Promise.resolve({status: 200}) as Promise<AxiosResponse>;
-      await controller['handlePost'](req as Request, res as Response);
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.count()).toBe(1);
       expect(renderSpy.calls.mostRecent().args.length).toBe(2);
-      expect(renderSpy.calls.mostRecent().args[0]).toBe(ForgotController['TEMPLATE_FORGOT']);
+      expect(renderSpy.calls.mostRecent().args[0]).toBe(ForgotPasswordResource['TEMPLATE_FORGOT']);
       expect(renderSpy.calls.mostRecent().args[1].status).toEqual('success');
     });
 
     it('renders the error page if invalid email is provided', async () => {
       const renderSpy = jasmine.createSpy();
-      const trackingController: any = {
-        trackEvent: () => {},
+      const accountController: any = {
+        resetPassword: () => Promise.reject(),
       };
       const config = {};
       const client = {};
-      const controller = new ForgotController(config as ServerConfig, client as Client);
-      controller['trackingController'] = trackingController as TrackingController;
+      const resource = new ForgotPasswordResource(config as ServerConfig, client as Client);
+      resource['accountController'] = accountController as AccountController;
+
       const req: any = {
         fields: {
           email: undefined,
@@ -91,31 +73,31 @@ describe('ForgotController', () => {
         render: renderSpy,
       };
 
-      await controller['handlePost'](req as Request, res as Response);
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.count()).toBe(1);
       expect(renderSpy.calls.mostRecent().args.length).toBe(2);
-      expect(renderSpy.calls.mostRecent().args[0]).toBe(ForgotController['TEMPLATE_FORGOT']);
+      expect(renderSpy.calls.mostRecent().args[0]).toBe(ForgotPasswordResource['TEMPLATE_FORGOT']);
       expect(renderSpy.calls.mostRecent().args[1].error).toEqual('forgot.errorInvalidEmail');
       expect(renderSpy.calls.mostRecent().args[1].status).toEqual('error');
 
       req.fields.email = 'a@a';
-      await controller['handlePost'](req as Request, res as Response);
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.mostRecent().args[1].error).toEqual('forgot.errorInvalidEmail');
 
       req.fields.email = ' ';
-      await controller['handlePost'](req as Request, res as Response);
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.mostRecent().args[1].error).toEqual('forgot.errorInvalidEmail');
     });
 
     it('renders the error page if backend returns error', async () => {
       const renderSpy = jasmine.createSpy();
-      const trackingController: any = {
+      const accountController: any = {
         trackEvent: () => {},
       };
       const config = {};
       const client = {};
-      const controller = new ForgotController(config as ServerConfig, client as Client);
-      controller['trackingController'] = trackingController as TrackingController;
+      const resource = new ForgotPasswordResource(config as ServerConfig, client as Client);
+      resource['accountController'] = accountController as AccountController;
 
       const req: any = {
         fields: {
@@ -127,18 +109,18 @@ describe('ForgotController', () => {
         render: renderSpy,
       };
 
-      controller['postPasswordReset'] = (): Promise<AxiosResponse> => Promise.reject({response: {status: ForgotController['HTTP_STATUS_EMAIL_IN_USE']}}) as Promise<AxiosResponse>;
-      await controller['handlePost'](req as Request, res as Response);
+      accountController['resetPassword'] = (): Promise<AxiosResponse> => Promise.reject({response: {status: ForgotPasswordResource['HTTP_STATUS_EMAIL_IN_USE']}}) as Promise<AxiosResponse>;
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.mostRecent().args[1].status).toEqual('error');
       expect(renderSpy.calls.mostRecent().args[1].error).toEqual('forgot.errorUnusedEmail');
 
-      controller['postPasswordReset'] = (): Promise<AxiosResponse> => Promise.reject({response: {status: ForgotController['HTTP_STATUS_EMAIL_ALREADY_SENT']}}) as Promise<AxiosResponse>;
-      await controller['handlePost'](req as Request, res as Response);
+      accountController['resetPassword'] = (): Promise<AxiosResponse> => Promise.reject({response: {status: ForgotPasswordResource['HTTP_STATUS_EMAIL_ALREADY_SENT']}}) as Promise<AxiosResponse>;
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.mostRecent().args[1].status).toEqual('error');
       expect(renderSpy.calls.mostRecent().args[1].error).toEqual('forgot.errorAlreadyProcessing');
 
-      controller['postPasswordReset'] = (): Promise<AxiosResponse> => Promise.reject({response: {status: 9999}}) as Promise<AxiosResponse>;
-      await controller['handlePost'](req as Request, res as Response);
+      accountController['resetPassword'] = (): Promise<AxiosResponse> => Promise.reject({response: {status: 9999}}) as Promise<AxiosResponse>;
+      await resource['handlePost'](req as Request, res as Response);
       expect(renderSpy.calls.mostRecent().args[1].status).toEqual('error');
       expect(renderSpy.calls.mostRecent().args[1].error).toEqual('forgot.errorUnknown');
     });

@@ -28,7 +28,7 @@ import * as i18nextLoadLocales from 'i18next-node-fs-backend';
 import * as nunjucks from 'nunjucks';
 import * as path from 'path';
 import {ServerConfig} from './config';
-import {ROUTES} from './controller';
+import {ROUTES} from './resource';
 import HealthCheckRoute from './routes/_health/HealthRoute';
 import ConfigRoute from './routes/config/ConfigRoute';
 import {InternalErrorRoute, NotFoundRoute} from './routes/error/ErrorRoutes';

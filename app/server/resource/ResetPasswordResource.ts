@@ -19,31 +19,27 @@
 
 import {Request, Response, Router} from "express";
 import {ServerConfig} from "../config";
+import {AccountController} from "../controller/AccountController";
+import {Client} from "../controller/Client";
 import * as BrowserUtil from '../util/BrowserUtil';
-import {Client} from "./Client";
-import {TrackingController} from "./TrackingController";
 
-export class ResetController {
+export class ResetPasswordResource {
 
   public static readonly ROUTE_RESET = '/reset';
 
   private static readonly TEMPLATE_RESET = 'account/reset';
 
-  private trackingController: TrackingController;
+  private accountController: AccountController;
 
   constructor(private readonly config: ServerConfig, private readonly client: Client) {
-    this.trackingController = new TrackingController(config, client);
+    this.accountController = new AccountController(this.config, this.client);
   }
 
   public getRoutes = () => {
     return [
-      Router().get(ResetController.ROUTE_RESET, this.handleGet),
-      Router().post(ResetController.ROUTE_RESET, this.handlePost),
+      Router().get(ResetPasswordResource.ROUTE_RESET, this.handleGet),
+      Router().post(ResetPasswordResource.ROUTE_RESET, this.handlePost),
     ];
-  };
-
-  private readonly postPasswordReset = async (key: string, code: string, password: string) => {
-    return this.client.post(`${this.config.BACKEND_REST}/password-reset/complete`, {password, key, code})
   };
 
   private readonly handleGet = async (req: Request, res: Response) => {
@@ -67,7 +63,7 @@ export class ResetController {
       title: _('forgot.title'),
       user_agent: () => BrowserUtil.parseUserAgent(req.header('User-Agent')),
     };
-    return res.render(ResetController.TEMPLATE_RESET, payload);
+    return res.render(ResetPasswordResource.TEMPLATE_RESET, payload);
   };
 
   private readonly handlePost = async (req: Request, res: Response) => {
@@ -79,16 +75,10 @@ export class ResetController {
     const key = req.fields.key as string;
     const password = req.fields.password as string;
 
-    if (!password || password.length < 8) {
-      error = _('reset.errorInvalidPassword')
-      status = 'fail'
-    } else if (key && code){
-      try {
-        const result = await this.postPasswordReset(key, code, password);
-        this.trackingController.trackEvent(req.originalUrl, 'account.reset', 'success', result.status, 1);
-        status = 'success';
-      } catch (requestError) {
-        this.trackingController.trackEvent(req.originalUrl, 'account.reset', 'fail', requestError.status, 1);
+    try {
+      this.accountController.resetPasswordComplete(key, code, password, req.originalUrl);
+    } catch(requestError) {
+      if (requestError && requestError.response && requestError.response.status) {
         switch (requestError.response.status) {
           case 400: {
             status = 'error';
@@ -99,6 +89,9 @@ export class ResetController {
             status = 'fail';
           }
         }
+      } else {
+        error = _('reset.errorInvalidPassword')
+        status = 'fail'
       }
     }
 
@@ -112,6 +105,6 @@ export class ResetController {
       title: _('reset.title'),
       user_agent: () => BrowserUtil.parseUserAgent(req.header('User-Agent')),
     };
-    return res.render(ResetController.TEMPLATE_RESET, payload)
+    return res.render(ResetPasswordResource.TEMPLATE_RESET, payload)
   }
 }

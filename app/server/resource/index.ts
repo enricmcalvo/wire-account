@@ -17,16 +17,16 @@
  *
  */
 
-import {DeleteAccountController} from "./DeleteAccountController";
-import {ForgotController} from "./ForgotController";
-import {ResetController} from "./ResetController";
-import {VerifyAccountController} from "./VerifyAccountController";
+import {DeleteAccountResource} from "./DeleteAccountResource";
+import {ForgotPasswordResource} from "./ForgotPasswordResource";
+import {ResetPasswordResource} from "./ResetPasswordResource";
+import {VerifyAccountResource} from "./VerifyAccountResource";
 
 export const ROUTES: {} = {
-  deleteAccount: DeleteAccountController.ROUTE_DELETE,
-  forgot: ForgotController.ROUTE_FORGOT,
-  resetPassword: ResetController.ROUTE_RESET,
-  verifyBot: VerifyAccountController.ROUTE_VERIFY_BOT,
-  verifyEmail: VerifyAccountController.ROUTE_VERIFY_EMAIL,
-  verifyPhone: VerifyAccountController.ROUTE_VERIFY_PHONE,
+  deleteAccount: DeleteAccountResource.ROUTE_DELETE,
+  forgot: ForgotPasswordResource.ROUTE_FORGOT,
+  resetPassword: ResetPasswordResource.ROUTE_RESET,
+  verifyBot: VerifyAccountResource.ROUTE_VERIFY_BOT,
+  verifyEmail: VerifyAccountResource.ROUTE_VERIFY_EMAIL,
+  verifyPhone: VerifyAccountResource.ROUTE_VERIFY_PHONE,
 };

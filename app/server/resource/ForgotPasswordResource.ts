@@ -19,10 +19,10 @@
 
 import {Request, Response, Router} from "express";
 import {ServerConfig} from "../config";
-import {Client} from "./Client";
-import {TrackingController} from "./TrackingController";
+import {AccountController} from "../controller/AccountController";
+import {Client} from "../controller/Client";
 
-export class ForgotController {
+export class ForgotPasswordResource {
 
   public static readonly ROUTE_FORGOT = '/forgot';
   private static readonly TEMPLATE_FORGOT = 'account/forgot';
@@ -30,21 +30,17 @@ export class ForgotController {
   private static readonly HTTP_STATUS_EMAIL_IN_USE = 400;
   private static readonly HTTP_STATUS_EMAIL_ALREADY_SENT = 409;
 
-  private trackingController: TrackingController;
+  private accountController: AccountController;
 
   constructor(private readonly config: ServerConfig, private readonly client: Client) {
-    this.trackingController = new TrackingController(config, client);
+    this.accountController = new AccountController(this.config, this.client);
   }
 
   public getRoutes = () => {
     return [
-      Router().get(ForgotController.ROUTE_FORGOT, this.handleGet),
-      Router().post(ForgotController.ROUTE_FORGOT, this.handlePost),
+      Router().get(ForgotPasswordResource.ROUTE_FORGOT, this.handleGet),
+      Router().post(ForgotPasswordResource.ROUTE_FORGOT, this.handlePost),
     ];
-  };
-
-  private resetPassword = async (email: string) => {
-    return this.client.post(`${this.config.BACKEND_REST}/password-reset`, {email});
   };
 
   private readonly handleGet = async (req: Request, res: Response) => {
@@ -57,7 +53,7 @@ export class ForgotController {
       status: 'init',
       title: _('forgot.title'),
     };
-    return res.render(ForgotController.TEMPLATE_FORGOT, payload);
+    return res.render(ForgotPasswordResource.TEMPLATE_FORGOT, payload);
   };
 
   private readonly handlePost = async (req: Request, res: Response) => {
@@ -65,26 +61,18 @@ export class ForgotController {
     let status;
     let error;
 
-    const email = (req.fields.email as string || '').toLowerCase().trim();
-    const emailRegex = /[^@]+@[^@]+\.[^@]+/;
-
-    if (!emailRegex.test(email)) {
-      error = _('forgot.errorInvalidEmail');
-      status = 'error';
-    } else {
-      try {
-        const result = await this.resetPassword(email);
-        this.trackingController.trackEvent(req.originalUrl, 'account.forgot', 'success', result.status, 1);
-        status = 'success';
-      } catch (requestError) {
-        this.trackingController.trackEvent(req.originalUrl, 'account.forgot', 'fail', requestError.status, 1);
+    try {
+      await this.accountController.resetPassword(req.fields.email as string, req.originalUrl);
+      status = 'success';
+    } catch(requestError) {
+      if (requestError && requestError.response && requestError.response.status) {
         switch (requestError.response.status) {
-          case ForgotController.HTTP_STATUS_EMAIL_IN_USE: {
+          case ForgotPasswordResource.HTTP_STATUS_EMAIL_IN_USE: {
             error = _('forgot.errorUnusedEmail');
             status = 'error';
             break;
           }
-          case ForgotController.HTTP_STATUS_EMAIL_ALREADY_SENT: {
+          case ForgotPasswordResource.HTTP_STATUS_EMAIL_ALREADY_SENT: {
             error = _('forgot.errorAlreadyProcessing');
             status = 'error';
             break;
@@ -94,8 +82,13 @@ export class ForgotController {
             status = 'error';
           }
         }
+      } else {
+        error = _('forgot.errorInvalidEmail');
+        status = 'error';
       }
     }
+
+
 
     const payload = {
       _,
@@ -104,6 +97,6 @@ export class ForgotController {
       status,
       title: _('forgot.title'),
     };
-    return res.render(ForgotController.TEMPLATE_FORGOT, payload);
+    return res.render(ForgotPasswordResource.TEMPLATE_FORGOT, payload);
   }
 };

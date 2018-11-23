@@ -19,20 +19,20 @@
 
 import {ServerConfig} from '../config';
 import {Client} from '../controller/Client';
-import {DeleteController} from '../controller/DeleteAccountController';
-import {ForgotController} from '../controller/ForgotController';
-import {ResetController} from '../controller/ResetController';
-import {RootController} from '../controller/RootController';
-import {VerifyController} from '../controller/VerifyAccountController';
+import {DeleteAccountResource} from '../resource/DeleteAccountResource';
+import {ForgotPasswordResource} from '../resource/ForgotPasswordResource';
+import {IndexResource} from '../resource/IndexResource';
+import {ResetPasswordResource} from '../resource/ResetPasswordResource';
+import {VerifyAccountResource} from '../resource/VerifyAccountResource';
 
 const Root = (config: ServerConfig) => {
   const client = new Client();
   return [
-    ...new ForgotController(config, client).getRoutes(),
-    ...new VerifyController(config, client).getRoutes(),
-    ...new RootController(config, client).getRoutes(),
-    ...new DeleteController(config, client).getRoutes(),
-    ...new ResetController(config, client).getRoutes(),
+    ...new ForgotPasswordResource(config, client).getRoutes(),
+    ...new VerifyAccountResource(config, client).getRoutes(),
+    ...new IndexResource(config, client).getRoutes(),
+    ...new DeleteAccountResource(config, client).getRoutes(),
+    ...new ResetPasswordResource(config, client).getRoutes(),
   ];
 }
 

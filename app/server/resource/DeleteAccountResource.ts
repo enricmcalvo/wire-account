@@ -19,30 +19,26 @@
 
 import {Request, Response, Router} from "express";
 import {ServerConfig} from "../config";
-import {Client} from "./Client";
-import {TrackingController} from "./TrackingController";
+import {AccountController} from "../controller/AccountController";
+import {Client} from "../controller/Client";
 
-export class DeleteAccountController {
+export class DeleteAccountResource {
 
   public static readonly ROUTE_DELETE = '/d';
 
   private static readonly TEMPLATE_DELETE = 'account/delete';
 
-  private trackingController: TrackingController;
+  private accountController: AccountController;
 
   constructor(private readonly config: ServerConfig, private readonly client: Client) {
-    this.trackingController = new TrackingController(config, client);
+    this.accountController = new AccountController(this.config, this.client);
   }
 
   public getRoutes = () => {
     return [
-      Router().get(DeleteAccountController.ROUTE_DELETE, this.handleGet),
-      Router().post(DeleteAccountController.ROUTE_DELETE, this.handlePost),
+      Router().get(DeleteAccountResource.ROUTE_DELETE, this.handleGet),
+      Router().post(DeleteAccountResource.ROUTE_DELETE, this.handlePost),
     ];
-  };
-
-  private readonly postAccountDelete = async (key: string, code: string) => {
-    return this.client.post(`${this.config.BACKEND_REST}/delete`, {key, code})
   };
 
   private readonly handleGet = async (req: Request, res: Response) => {
@@ -64,7 +60,7 @@ export class DeleteAccountController {
       status,
       title: _('delete.title'),
     };
-    return res.render(DeleteAccountController.TEMPLATE_DELETE, payload);
+    return res.render(DeleteAccountResource.TEMPLATE_DELETE, payload);
   };
 
   private readonly handlePost = async (req: Request, res: Response) => {
@@ -75,13 +71,11 @@ export class DeleteAccountController {
     const key = req.fields.key as string;
 
     if (key && code){
-      try {
-        const result = await this.postAccountDelete(key, code);
-        this.trackingController.trackEvent(req.originalUrl, 'account.delete', 'success', result.status, 1);
+      try{
+        await this.accountController.deleteAccount(key, code, req.originalUrl);
         status = 'success';
-      } catch (requestError) {
-        status = 'error';
-        this.trackingController.trackEvent(req.originalUrl, 'account.delete', 'fail', requestError.status, 1);
+      } catch(deleteAccountError) {
+        status = 'error'
       }
     }
 
@@ -93,6 +87,6 @@ export class DeleteAccountController {
       status,
       title: _('delete.title'),
     };
-    return res.render(DeleteAccountController.TEMPLATE_DELETE, payload)
+    return res.render(DeleteAccountResource.TEMPLATE_DELETE, payload)
   }
 };
